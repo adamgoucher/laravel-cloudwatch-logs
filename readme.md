@@ -1,13 +1,13 @@
-## Logger for Aws Cloud Watch
+## Secure Logger for Aws Cloud Watch
 
 ### Breaking Change for version dev-master
 
-Here is the documentation for the PHP vendor to work with Laravel for sending logs to AWS CloudWatch.
+Here is the documentation for the PHP vendor to work with Laravel for sending logs to AWS CloudWatch use security policy without full access to CloudWatch.
 ### Installation
 
 `composer require diephp/laravel-cloudwatch-logs`
 
-OR manual add to composer.json:
+or manual add to composer.json:
 `"diephp/laravel-cloudwatch-logs": "dev-master"`
 ```json
 ...
@@ -20,17 +20,19 @@ OR manual add to composer.json:
 ...
 ```
 
-### Example
+### Example use in Laravel
 
 You can use laravel's default `\Log` class to use this
 
 `\Log::error('Service error', ['message' => 'Message details', 'user_id' => \Auth()?->user_id]);`
 
-### Usage with AWS 
+### CConfiguration AWS policy
 
-Create an IAM role -> Users -> appName
+Create an IAM role -> Users -> appName or select exists
 
 Set the Permissions policies: (This example recommends for full access for test\dev env)
+
+Log group and log stream will be created automatically (not recommended to use on production)
 ```json
 {
     "Version": "2012-10-17",
@@ -39,8 +41,11 @@ Set the Permissions policies: (This example recommends for full access for test\
             "Sid": "CloudWatchLogsFullAccess",
             "Effect": "Allow",
             "Action": [
-                "logs:*",
-                "cloudwatch:GenerateQuery"
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams"
             ],
             "Resource": "*"
         }
@@ -50,20 +55,21 @@ Set the Permissions policies: (This example recommends for full access for test\
 
 Recommendation config policies: (more security)
 
-But you must create log group manually and set in config ` 'createGroup' => false,`
+But you must create log group and log stream manually and set in config ` 'createGroup' => false,`
 ```json
 {
-	"Version": "2012-10-17",
-	"Statement": [
-		{
-			"Effect": "Allow",
-			"Action": [
-				"logs:CreateLogStream",
-				"logs:PutLogEvents"
-			],
-			"Resource": "*"
-		}
-	]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:PutLogEvents",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "*"
+        }
+    ]
 }
 ```
 
@@ -103,10 +109,10 @@ Or Full configuration:
             'group_name'  => env('CLOUDWATCH_LOG_GROUP_NAME', env('AWS_SDK_LOG_GROUP_PREFIX', '')."general"),
             'version'     => env('CLOUDWATCH_LOG_VERSION', 'latest'),
             'formatter'   => \Monolog\Formatter\JsonFormatter::class,
-            'batch_size'  => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000),
+            'batch_size'  => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000), // max buffer size to send in cloudetach
             'level'       => env('LOG_LEVEL', 'debug'),
-            'createGroup' => true,
-            'bubble' => true,
+            'createGroup' => true, // it related from aws policy wtich you choose
+            'bubble' => true, //Whether the messages that are handled can bubble up the stack or not
             'extra' => [
                 'env' => env('APP_ENV'),
                 'php' => PHP_VERSION,
