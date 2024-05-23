@@ -1,38 +1,63 @@
-## Secure Logger for Aws Cloud Watch
 
-### Breaking Change for version dev-master
+## Secure Laravel Logger for AWS CloudWatch
 
-Here is the documentation for the PHP vendor to work with Laravel for sending logs to AWS CloudWatch use security policy without full access to CloudWatch.
+### Breaking Change for Version dev-master
+
+This documentation explains how to use the PHP package with Laravel to send logs to AWS CloudWatch using a security policy that doesn't require full access to CloudWatch.
+
 ### Installation
 
-`composer require diephp/laravel-cloudwatch-logs`
-
-or manual add to composer.json:
-`"diephp/laravel-cloudwatch-logs": "dev-master"`
-```json
-...
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/diephp/laravel-cloudwatch-logs"
-    }
-],
-...
+You can install it via Composer:
+```bash
+composer require diephp/laravel-cloudwatch-logs
 ```
 
-### Example use in Laravel
+Or manually add this to your `composer.json`:
+```json
+"require": {
+    "diephp/laravel-cloudwatch-logs": "dev-master"
+}
+```
 
-You can use laravel's default `\Log` class to use this
+### Adding the Repository
 
-`\Log::error('Service error', ['message' => 'Message details', 'user_id' => \Auth()?->user_id]);`
+Add the following to the repositories section in your `composer.json`:
 
-### CConfiguration AWS policy
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/diephp/laravel-cloudwatch-logs"
+        }
+    ]
+}
+```
 
-Create an IAM role -> Users -> appName or select exists
+### Usage in Laravel
 
-Set the Permissions policies: (This example recommends for full access for test\dev env)
+You can use this package with Laravel's default `\Log` class. Example usage:
 
-Log group and log stream will be created automatically (not recommended to use on production)
+```php
+\Log::error('Service error', ['message' => 'Message details', 'user_id' => \Auth()?->user_id]);
+```
+
+```php
+\Log::debug("Check status", [
+    "status"  => "ok",
+    "ver"     => app()->version(),
+    "env"     => env("APP_ENV"),
+    "api_url" => env("APP_URL"),
+]);
+```
+
+### AWS Policy Configuration
+
+Create an IAM role -> Users -> appName or select an existing one.
+
+Set the Permissions policies: (This example provides full access for test/dev environments)
+
+Log group and log stream will be created automatically (not recommended for production)
 ```json
 {
     "Version": "2012-10-17",
@@ -53,9 +78,9 @@ Log group and log stream will be created automatically (not recommended to use o
 }
 ```
 
-Recommendation config policies: (more security)
+Recommended configuration policies (more secure):
 
-But you must create log group and log stream manually and set in config ` 'createGroup' => false,`
+You must create the log group and log stream manually and set in config `'createGroup' => false,`
 ```json
 {
     "Version": "2012-10-17",
@@ -73,57 +98,61 @@ But you must create log group and log stream manually and set in config ` 'creat
 }
 ```
 
+### Laravel Configuration
 
-### Laravel Config
-Open file config/logging.php and find channels array, then add key `cloudwatch` with
-minimal configuration:
-```
-'channels' =>  [
+Open `config/logging.php` and find the `channels` array, then add the `cloudwatch` key with minimal configuration:
+
+```php
+'channels' => [
     ...
     'cloudwatch' => [
-            'driver' => 'custom',
-            'via' => \DiePHP\LaravelCloudWatchLog\Logger::class,
-            'region' => env('AWS_REGION', 'eu-west-1'),
-            'credentials' => [
-                'key'    => env('AWS_ACCESS_KEY_ID'),
-                'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            ],
+        'driver' => 'custom',
+        'via' => \DiePHP\LaravelCloudWatchLog\Logger::class,
+        'region' => env('AWS_REGION', 'eu-west-1'),
+        'credentials' => [
+            'key'    => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
         ],
+    ],
     ...    
 ]
 ```
 
-Or Full configuration:
-```
-'channels' =>  [
+For a more detailed configuration, you might want the following:
+
+```php
+'channels' => [
     ...
     'cloudwatch' => [
-            'driver'      => 'custom',
-            'region'      => env('AWS_REGION', 'eu-west-1'),
-            'credentials' => [
-                'key'    => env('AWS_ACCESS_KEY_ID'),
-                'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            ],
-            'stream_name' => env('CLOUDWATCH_LOG_STREAM', 'general'),
-            'retention'   => env('CLOUDWATCH_LOG_RETENTION_DAYS', 31),
-            'group_name'  => env('CLOUDWATCH_LOG_GROUP_NAME', env('AWS_SDK_LOG_GROUP_PREFIX', '')."general"),
-            'version'     => env('CLOUDWATCH_LOG_VERSION', 'latest'),
-            'formatter'   => \Monolog\Formatter\JsonFormatter::class,
-            'batch_size'  => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000), // max buffer size to send in cloudetach
-            'level'       => env('LOG_LEVEL', 'debug'),
-            'createGroup' => true, // it related from aws policy wtich you choose
-            'bubble' => true, //Whether the messages that are handled can bubble up the stack or not
-            'extra' => [
-                'env' => env('APP_ENV'),
-                'php' => PHP_VERSION,
-                'laravel' => app()->version(),
-            ],
-            'tags' => ['tag1','tag2'],
-            'via'         => \DiePHP\LaravelCloudWatchLog\Logger::class,
+        'driver'      => 'custom',
+        'region'      => env('AWS_REGION', 'eu-west-1'),
+        'credentials' => [
+            'key'    => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
         ],
+        'stream_name' => env('CLOUDWATCH_LOG_STREAM', 'general'),
+        'retention'   => env('CLOUDWATCH_LOG_RETENTION_DAYS', 31),
+        'group_name'  => env('CLOUDWATCH_LOG_GROUP_NAME', env('AWS_SDK_LOG_GROUP_PREFIX', '')."general"),
+        'version'     => env('CLOUDWATCH_LOG_VERSION', 'latest'),
+        'formatter'   => \Monolog\Formatter\JsonFormatter::class,
+        'batch_size'  => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000), // max buffer size to send in one batch
+        'level'       => env('LOG_LEVEL', 'debug'),
+        'createGroup' => true, // This is related to the AWS policy you choose.
+        'bubble'      => true, // Whether the messages that are handled can bubble up the stack or not
+        'extra'       => [
+            'env'     => env('APP_ENV'),
+            'php'     => PHP_VERSION,
+            'laravel' => app()->version(),
+        ],
+        'tags'        => ['tag1', 'tag2'],
+        'via'         => \DiePHP\LaravelCloudWatchLog\Logger::class,
+    ],
     ...    
 ]
 ```
 
-And set the `LOG_CHANNEL` in your environment variable to `cloudwatch`.
+If you use AWS infrastructure for deployment, you can remove the `credentials` section from the config because AWS containers already have credentials for aws-sdk.
 
+Then, you should set the `LOG_CHANNEL` in your environment variables to `cloudwatch`.
+
+Keep in mind that you should replace the `env` values with the actual ones you plan to use.
