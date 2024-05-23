@@ -59,7 +59,7 @@ class Logger
             isset($config['stream_name']) ? $config['stream_name'] : 'default',
             isset($config['retention']) ? \intval($config['retention']) : 14,
             isset($config['batch_size']) ? $config['batch_size'] : 10000,
-            (array) isset($config['tags']) ? $config['tags'] : [],
+             isset($config['tags']) ? (array) $config['tags'] : [],
             isset($config['level']) ? $config['level'] : 'debug',
             isset($config['bubble']) ? \boolval($config['bubble']) : true,
             isset($config['createGroup']) ? \boolval($config['createGroup']) : true
