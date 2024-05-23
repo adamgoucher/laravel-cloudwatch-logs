@@ -14,23 +14,10 @@ composer require diephp/laravel-cloudwatch-logs
 
 Or manually add this to your `composer.json`:
 ```json
-"require": {
-    "diephp/laravel-cloudwatch-logs": "dev-master"
-}
-```
-
-### Adding the Repository
-
-Add the following to the repositories section in your `composer.json`:
-
-```json
 {
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/diephp/laravel-cloudwatch-logs"
-        }
-    ]
+    "require": {
+        "diephp/laravel-cloudwatch-logs": "^1.0.0"
+    }
 }
 ```
 
