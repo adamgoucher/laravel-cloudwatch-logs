@@ -1,50 +1,123 @@
 ## Logger for Aws Cloud Watch
 
-### Breaking Change for version 1.0
+### Breaking Change for version dev-master
 
-When this package started, it started as a listener for log events and would only work with another channel.
-This package would listen to log events and just add extra log to cloud watch. So, you did not need to add cloudwatch as a `channel`.
-But after `1.0` it works as a custom driver.
-So, you MUST add `LOG_CHANNEL` as `cloudwatch` in your logging config for this to work going forward. 
-
+Here is the documentation for the PHP vendor to work with Laravel for sending logs to AWS CloudWatch.
 ### Installation
 
 `composer require diephp/laravel-cloudwatch-logs`
+
+OR manual add to composer.json:
+`"diephp/laravel-cloudwatch-logs": "dev-master"`
+```json
+...
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/diephp/laravel-cloudwatch-logs"
+    }
+],
+...
+```
 
 ### Example
 
 You can use laravel's default `\Log` class to use this
 
-`\Log::info('user logged in', ['id' => 123, 'name' => 'Naren']);`
+`\Log::error('Service error', ['message' => 'Message details', 'user_id' => \Auth()?->user_id]);`
 
-### Usage with AWS Lambda
+### Usage with AWS 
 
-Make sure the AWS Lambda template contains an IAM role with enough access.
-So think about Logs:CreateLogGroup, Logs:DescribeLogGroups, Logs:CreateLogStream, Logs:DescribeLogStream, Logs:PutRetentionPolicy and Logs:PutLogEvents
+Create an IAM role -> Users -> appName
 
-### Config
+Set the Permissions policies: (This example recommends for full access for test\dev env)
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "CloudWatchLogsFullAccess",
+            "Effect": "Allow",
+            "Action": [
+                "logs:*",
+                "cloudwatch:GenerateQuery"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
 
+Recommendation config policies: (more security)
+
+But you must create log group manually and set in config ` 'createGroup' => false,`
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"logs:CreateLogStream",
+				"logs:PutLogEvents"
+			],
+			"Resource": "*"
+		}
+	]
+}
+```
+
+
+### Laravel Config
+Open file config/logging.php and find channels array, then add key `cloudwatch` with
+minimal configuration:
 ```
 'channels' =>  [
+    ...
     'cloudwatch' => [
             'driver' => 'custom',
-            'name' => env('CLOUDWATCH_LOG_NAME', ''),
-            'region' => env('CLOUDWATCH_LOG_REGION', ''),
+            'via' => \DiePHP\LaravelCloudWatchLog\Logger::class,
+            'region' => env('AWS_REGION', 'eu-west-1'),
             'credentials' => [
-                'key' => env('CLOUDWATCH_LOG_KEY', ''),
-                'secret' => env('CLOUDWATCH_LOG_SECRET', '')
+                'key'    => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY'),
             ],
-            'stream_name' => env('CLOUDWATCH_LOG_STREAM_NAME', 'laravel_app'),
-            'retention' => env('CLOUDWATCH_LOG_RETENTION_DAYS', 14),
-            'group_name' => env('CLOUDWATCH_LOG_GROUP_NAME', 'laravel_app'),
-            'version' => env('CLOUDWATCH_LOG_VERSION', 'latest'),
-            'formatter' => \Monolog\Formatter\JsonFormatter::class,       
-            'batch_size' => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000),    
-            'via' => \Pagevamp\Logger::class,
         ],
+    ...    
+]
+```
+
+Or Full configuration:
+```
+'channels' =>  [
+    ...
+    'cloudwatch' => [
+            'driver'      => 'custom',
+            'region'      => env('AWS_REGION', 'eu-west-1'),
+            'credentials' => [
+                'key'    => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            ],
+            'stream_name' => env('CLOUDWATCH_LOG_STREAM', 'general'),
+            'retention'   => env('CLOUDWATCH_LOG_RETENTION_DAYS', 31),
+            'group_name'  => env('CLOUDWATCH_LOG_GROUP_NAME', env('AWS_SDK_LOG_GROUP_PREFIX', '')."general"),
+            'version'     => env('CLOUDWATCH_LOG_VERSION', 'latest'),
+            'formatter'   => \Monolog\Formatter\JsonFormatter::class,
+            'batch_size'  => env('CLOUDWATCH_LOG_BATCH_SIZE', 10000),
+            'level'       => env('LOG_LEVEL', 'debug'),
+            'createGroup' => true,
+            'bubble' => true,
+            'extra' => [
+                'env' => env('APP_ENV'),
+                'php' => PHP_VERSION,
+                'laravel' => app()->version(),
+            ],
+            'tags' => ['tag1','tag2'],
+            'via'         => \DiePHP\LaravelCloudWatchLog\Logger::class,
+        ],
+    ...    
 ]
 ```
 
 And set the `LOG_CHANNEL` in your environment variable to `cloudwatch`.
 
-If the role of your AWS EC2 instance has access to Cloudwatch logs, `CLOUDWATCH_LOG_KEY` and `CLOUDWATCH_LOG_SECRET` need not be defined in your `.env` file.

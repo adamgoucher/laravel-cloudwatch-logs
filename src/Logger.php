@@ -28,6 +28,7 @@ class Logger
      * @return \Monolog\Logger
      * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\LaravelCloudWatchException
      * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
+     * @throws \Exception
      */
     public function __invoke(array $config)
     {
@@ -68,6 +69,14 @@ class Logger
         $formatter = $this->resolveFormatter($config);
         $logHandler->setFormatter($formatter);
         $logger->pushHandler($logHandler);
+
+        if (isset($config['extra'])) {
+            $logger->pushProcessor(function ($record) use ($config) {
+                $record['extra'] = $config['extra'];
+
+                return $record;
+            });
+        }
 
         return $logger;
     }
