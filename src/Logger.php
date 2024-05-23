@@ -15,6 +15,7 @@ use Monolog\Formatter\LineFormatter;
  */
 class Logger
 {
+
     private $app;
 
     public function __construct($app = null)
@@ -55,12 +56,12 @@ class Logger
             new CloudWatchLogsClient($awsCredentials),
             isset($config['group_name']) ? $config['group_name'] : 'general',
             isset($config['stream_name']) ? $config['stream_name'] : 'default',
-            isset($config['retention']) ? intval($config['retention']) : 14,
+            isset($config['retention']) ? \intval($config['retention']) : 14,
             isset($config['batch_size']) ? $config['batch_size'] : 10000,
             (array) isset($config['tags']) ? $config['tags'] : [],
             isset($config['level']) ? $config['level'] : 'debug',
-            isset($config['bubble']) ? boolval($config['bubble']) : true,
-            isset($config['createGroup']) ? boolval($config['createGroup']) : true
+            isset($config['bubble']) ? \boolval($config['bubble']) : true,
+            isset($config['createGroup']) ? \boolval($config['createGroup']) : true
         );
         $logger = new \Monolog\Logger(isset($config['name']) ? $config['name'] : 'logger');
 
@@ -90,7 +91,7 @@ class Logger
 
         $formatter = $configs['formatter'];
 
-        if (\is_string($formatter) && class_exists($formatter)) {
+        if (\is_string($formatter) && \class_exists($formatter)) {
             return $this->app->make($formatter);
         }
 

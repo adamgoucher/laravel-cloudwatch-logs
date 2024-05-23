@@ -1,12 +1,18 @@
 {
     "name": "diephp/laravel-cloudwatch-logs",
     "description": "Laravel Adapter for AWS CloudWatch",
-    "keywords": ["cloudWatch", "aws", "logger", "logs", "laravel"],
+    "keywords": [
+        "cloudWatch",
+        "aws",
+        "logger",
+        "logs",
+        "laravel"
+    ],
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name" : "Anatoly Astapov",
+            "name": "Anatoly Astapov",
             "email": "anatoly.astapov@gmail.com"
         }
     ],
