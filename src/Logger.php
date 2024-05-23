@@ -8,9 +8,13 @@ use DiePHP\LaravelCloudWatchLog\Exceptions\LaravelCloudWatchException;
 use Maxbanton\Cwh\Handler\CloudWatch;
 use Monolog\Formatter\LineFormatter;
 
+/**
+ * Class Logger
+ * The Logger class is responsible for creating and configuring instances of \Monolog\Logger.
+ * It uses the AWS CloudWatch service to store and manage log entries.
+ */
 class Logger
 {
-
     private $app;
 
     public function __construct($app = null)
@@ -21,8 +25,8 @@ class Logger
     /**
      * @param array $config
      * @return \Monolog\Logger
+     * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\LaravelCloudWatchException
      * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
-     * @throws \Exception
      */
     public function __invoke(array $config)
     {
@@ -34,69 +38,39 @@ class Logger
             throw new LaravelCloudWatchException('This vendor available only for Laravel');
         }
 
-        $loggingConfig = $config;
-        $cwClient = new CloudWatchLogsClient($this->getCredentials());
+        if (empty($config['region'])) {
+            throw new ConfigLaravelCloudWatchException('CloudWatch require param: `region`. You must add `cloudwatch` to the channels array in `config/logging.php`');
+        }
 
-        $streamName = $loggingConfig['stream_name'];
-        $retentionDays = $loggingConfig['retention'];
-        $groupName = $loggingConfig['group_name'];
-        $batchSize = isset($loggingConfig['batch_size']) ? $loggingConfig['batch_size'] : 10000;
+        $awsCredentials = [
+            'region'  => $config['region'],
+            'version' => isset($config['version']) ? $config['version'] : 'latest',
+        ];
 
-        $logHandler = new CloudWatch($cwClient, $groupName, $streamName, $retentionDays, $batchSize);
-        $logger = new \Monolog\Logger($loggingConfig['name']);
+        if (isset($config['credentials']['key'])) {
+            $awsCredentials['credentials'] = $config['credentials'];
+        }
 
-        $formatter = $this->resolveFormatter($loggingConfig);
+        $logHandler = new CloudWatch(
+            new CloudWatchLogsClient($awsCredentials),
+            isset($config['group_name']) ? $config['group_name'] : 'general',
+            isset($config['stream_name']) ? $config['stream_name'] : 'default',
+            isset($config['retention']) ? intval($config['retention']) : 14,
+            isset($config['batch_size']) ? $config['batch_size'] : 10000,
+            (array) isset($config['tags']) ? $config['tags'] : [],
+            isset($config['level']) ? $config['level'] : 'debug',
+            isset($config['bubble']) ? boolval($config['bubble']) : true,
+            isset($config['createGroup']) ? boolval($config['createGroup']) : true
+        );
+        $logger = new \Monolog\Logger(isset($config['name']) ? $config['name'] : 'logger');
+
+        $formatter = $this->resolveFormatter($config);
         $logHandler->setFormatter($formatter);
         $logger->pushHandler($logHandler);
 
         return $logger;
     }
 
-    /**
-     * This is the way config should be defined in config/logging.php
-     * in key cloudwatch.
-     * 'cloudwatch' => [
-     *      'driver' => 'custom',
-     *     'name' => env('CLOUDWATCH_LOG_NAME', ''),
-     *     'region' => env('CLOUDWATCH_LOG_REGION', ''),
-     *     'credentials' => [
-     *         'key' => env('CLOUDWATCH_LOG_KEY', ''),
-     *         'secret' => env('CLOUDWATCH_LOG_SECRET', '')
-     *     ],
-     *     'stream_name' => env('CLOUDWATCH_LOG_STREAM_NAME', 'laravel_app'),
-     *     'retention' => env('CLOUDWATCH_LOG_RETENTION_DAYS', 14),
-     *     'group_name' => env('CLOUDWATCH_LOG_GROUP_NAME', 'laravel_app'),
-     *     'version' => env('CLOUDWATCH_LOG_VERSION', 'latest'),
-     *     'via' => \Pagevamp\Logger::class,
-     * ]
-     * @return array
-     * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
-     */
-    protected function getCredentials()
-    {
-        $loggingConfig = $this->app->make('config')->get('logging.channels');
-
-        if (!isset($loggingConfig['cloudwatch'])) {
-            throw new ConfigLaravelCloudWatchException('Configuration Missing for Cloudwatch Log');
-        }
-
-        $cloudWatchConfigs = $loggingConfig['cloudwatch'];
-
-        if (!isset($cloudWatchConfigs['region'])) {
-            throw new ConfigLaravelCloudWatchException('Missing region key-value');
-        }
-
-        $awsCredentials = [
-            'region'  => $cloudWatchConfigs['region'],
-            'version' => $cloudWatchConfigs['version'],
-        ];
-
-        if ($cloudWatchConfigs['credentials']['key']) {
-            $awsCredentials['credentials'] = $cloudWatchConfigs['credentials'];
-        }
-
-        return $awsCredentials;
-    }
 
     /**
      * @param array $configs
