@@ -24,8 +24,6 @@ So think about Logs:CreateLogGroup, Logs:DescribeLogGroups, Logs:CreateLogStream
 
 ### Config
 
-Config for logging is defined at `config/logging.php`. Add `cloudwatch` to the `channels` array
-
 ```
 'channels' =>  [
     'cloudwatch' => [

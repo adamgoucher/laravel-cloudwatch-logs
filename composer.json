@@ -19,7 +19,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Pagevamp\\": "src/",
+            "DiePHP\\LaravelCloudWatchLog\\": "src/",
             "Tests\\": "tests/"
         }
     },

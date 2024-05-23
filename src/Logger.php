@@ -1,11 +1,12 @@
 <?php
 
-namespace Pagevamp;
+namespace DiePHP\LaravelCloudWatchLog;
 
 use Aws\CloudWatchLogs\CloudWatchLogsClient;
+use DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException;
+use DiePHP\LaravelCloudWatchLog\Exceptions\LaravelCloudWatchException;
 use Maxbanton\Cwh\Handler\CloudWatch;
 use Monolog\Formatter\LineFormatter;
-use Pagevamp\Exceptions\IncompleteCloudWatchConfig;
 
 class Logger
 {
@@ -17,10 +18,20 @@ class Logger
         $this->app = $app;
     }
 
+    /**
+     * @param array $config
+     * @return \Monolog\Logger
+     * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
+     * @throws \Exception
+     */
     public function __invoke(array $config)
     {
-        if($this->app === null) {
+        if ($this->app === null) {
             $this->app = \app();
+        }
+
+        if (!$this->app) {
+            throw new LaravelCloudWatchException('This vendor available only for Laravel');
         }
 
         $loggingConfig = $config;
@@ -44,7 +55,6 @@ class Logger
     /**
      * This is the way config should be defined in config/logging.php
      * in key cloudwatch.
-     *
      * 'cloudwatch' => [
      *      'driver' => 'custom',
      *     'name' => env('CLOUDWATCH_LOG_NAME', ''),
@@ -59,27 +69,25 @@ class Logger
      *     'version' => env('CLOUDWATCH_LOG_VERSION', 'latest'),
      *     'via' => \Pagevamp\Logger::class,
      * ]
-     *
      * @return array
-     *
-     * @throws \Pagevamp\Exceptions\IncompleteCloudWatchConfig
+     * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
      */
     protected function getCredentials()
     {
         $loggingConfig = $this->app->make('config')->get('logging.channels');
 
         if (!isset($loggingConfig['cloudwatch'])) {
-            throw new IncompleteCloudWatchConfig('Configuration Missing for Cloudwatch Log');
+            throw new ConfigLaravelCloudWatchException('Configuration Missing for Cloudwatch Log');
         }
 
         $cloudWatchConfigs = $loggingConfig['cloudwatch'];
 
         if (!isset($cloudWatchConfigs['region'])) {
-            throw new IncompleteCloudWatchConfig('Missing region key-value');
+            throw new ConfigLaravelCloudWatchException('Missing region key-value');
         }
 
         $awsCredentials = [
-            'region' => $cloudWatchConfigs['region'],
+            'region'  => $cloudWatchConfigs['region'],
             'version' => $cloudWatchConfigs['version'],
         ];
 
@@ -91,10 +99,9 @@ class Logger
     }
 
     /**
-     * @return mixed|LineFormatter
-     *
-     * @throws IncompleteCloudWatchConfig
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @param array $configs
+     * @return \Monolog\Formatter\LineFormatter
+     * @throws \DiePHP\LaravelCloudWatchLog\Exceptions\ConfigLaravelCloudWatchException
      */
     private function resolveFormatter(array $configs)
     {
@@ -117,6 +124,7 @@ class Logger
             return $formatter($configs);
         }
 
-        throw new IncompleteCloudWatchConfig('Formatter is missing for the logs');
+        throw new ConfigLaravelCloudWatchException('Formatter is missing for the logs');
     }
+
 }
