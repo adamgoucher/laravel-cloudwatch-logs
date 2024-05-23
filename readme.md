@@ -9,7 +9,7 @@ So, you MUST add `LOG_CHANNEL` as `cloudwatch` in your logging config for this t
 
 ### Installation
 
-`composer require pagevamp/laravel-cloudwatch-logs`
+`composer require diephp/laravel-cloudwatch-logs`
 
 ### Example
 
@@ -50,8 +50,3 @@ Config for logging is defined at `config/logging.php`. Add `cloudwatch` to the `
 And set the `LOG_CHANNEL` in your environment variable to `cloudwatch`.
 
 If the role of your AWS EC2 instance has access to Cloudwatch logs, `CLOUDWATCH_LOG_KEY` and `CLOUDWATCH_LOG_SECRET` need not be defined in your `.env` file.
-
-### Contribution
-
-I have added a `pre-commit` hook to run `php-cs-fixer` whenever you make a commit. To enable this run `sh hooks.sh`.
-

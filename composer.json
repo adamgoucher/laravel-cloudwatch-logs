@@ -1,5 +1,5 @@
 {
-    "name": "pagevamp/laravel-cloudwatch-logs",
+    "name": "diephp/laravel-cloudwatch-logs",
     "description": "Laravel Adapter for AWS CloudWatch",
     "type": "library",
     "license": "MIT",
@@ -11,6 +11,10 @@
         {
             "name": "Sujan Shrestha",
             "email": "najus.shrestha@gmail.com"
+        },
+        {
+            "name" : "Anatoly Astapov",
+            "email": "anatoly.astapov@gmail.com"
         }
     ],
     "autoload": {
@@ -20,12 +24,7 @@
         }
     },
     "require": {
-        "phpnexus/cwh": "^1.1.14 || ^2.0 || ^3.0.0",
-        "illuminate/support": "^5.1 || ^6.0 || ^7.0 || ^8.0 || ^9.0|^10.0 || ^11.0"
-    },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.12 || ^2.16|^3.14",
-        "phpunit/phpunit": "^6.5 || ^8.4 || ^9.0 || ^10.5",
-        "mockery/mockery": "^1.2"
+        "maxbanton/cwh": "^2.0 || ^3.0.0",
+        "illuminate/support": "^9.52.16|^10.0|^11.0"
     }
 }
